@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ListenToYourWife</title>
+  <style>
+    :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+    * { box-sizing: border-box; }
+    .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .app-header h1 { margin: 0; font-size: 20px; }
+    .app-header a { text-decoration: none; font-size: 22px; }
+    .onboarding { text-align: center; padding: 48px 16px; }
+    .onboarding .icon { font-size: 52px; margin-bottom: 16px; }
+    .onboarding h2 { font-size: 18px; margin-bottom: 8px; }
+    .onboarding p { opacity: 0.7; margin-bottom: 24px; font-size: 14px; line-height: 1.6; }
+    .onboarding a { display: inline-block; padding: 12px 28px; background: #2563eb; color: #fff; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; }
+    .recorder { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 24px; }
+    .btn-record { width: 140px; height: 140px; border-radius: 50%; border: none; cursor: pointer; font-size: 20px; font-weight: 700; transition: all 0.3s; color: #fff; }
+    .btn-record.idle { background: #2563eb; }
+    .btn-record.recording { background: #dc2626; animation: pulse 1.5s infinite; }
+    .btn-record:disabled { background: #888; cursor: not-allowed; animation: none; }
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); } 50% { box-shadow: 0 0 0 20px rgba(220,38,38,0); } }
+    .timer { font-size: 42px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .status-line { font-size: 13px; opacity: 0.6; min-height: 20px; }
+    .group-selector { display: flex; align-items: center; gap: 8px; font-size: 13px; opacity: 0.7; }
+    .group-selector select { padding: 4px 8px; border-radius: 6px; border: 1px solid #9995; font-size: 13px; }
+    .transcript-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .transcript-header h2 { margin: 0; font-size: 16px; }
+    .transcript-header button { font-size: 12px; padding: 4px 10px; border-radius: 6px; background: #6b7280; color: #fff; border: none; cursor: pointer; }
+    .empty { text-align: center; padding: 40px 16px; opacity: 0.35; font-size: 14px; }
+    .entry { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid #8882; align-items: flex-start; font-size: 13px; }
+    .entry-time { min-width: 44px; opacity: 0.5; }
+    .entry-badge { min-width: 56px; font-size: 11px; padding: 2px 5px; border-radius: 4px; text-align: center; font-weight: 600; }
+    .badge-wife { background: #27ae6022; color: #27ae60; }
+    .badge-other { background: #e74c3c1a; color: #e74c3c; }
+    .badge-busy { background: #f39c121a; color: #f39c12; }
+    .entry-text { flex: 1; line-height: 1.5; }
+    .entry-text.other { opacity: 0.35; }
+    .entry-action { flex: 0 0 auto; }
+    .entry-action button { font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid #8885; background: transparent; cursor: pointer; }
+    .entry-action button:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .chat-panel { margin-top: 8px; padding: 10px; background: #8881; border-radius: 8px; font-size: 13px; }
+    .chat-msg { margin-bottom: 8px; line-height: 1.5; }
+    .chat-msg .role { font-weight: 600; font-size: 11px; opacity: 0.6; }
+    .chat-input-row { display: flex; gap: 6px; }
+    .chat-input-row input { flex: 1; padding: 6px 8px; border-radius: 6px; border: 1px solid #9995; font-size: 12px; }
+    .chat-input-row button { padding: 4px 10px; font-size: 12px; background: #2563eb; color: #fff; border-radius: 6px; border: none; cursor: pointer; }
+    .chat-input-row button.memo-btn { background: #6b7280; }
+    .entry-chat-toggle { cursor: pointer; font-size: 14px; opacity: 0.6; margin-left: 4px; }
+    .entry-chat-toggle:hover { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="app-header">
+    <h1>🎀 听见老婆</h1>
+    <span style="display:flex;gap:16px;align-items:center;">
+      <a href="/memos.html" style="font-size:15px;text-decoration:none;">📝</a>
+      <a href="/voiceprint.html" title="声纹设置">⚙️</a>
+    </span>
+  </div>
+
+  <div class="onboarding hidden" id="onboarding">
+    <div class="icon">💝</div>
+    <h2>还没听过老婆的声音呢</h2>
+    <p>先录一段老婆说话的声音，我就能帮你在对话中认出她了。</p>
+    <a href="/voiceprint.html">去录一段 →</a>
+  </div>
+
+  <div class="recorder hidden" id="recorder">
+    <button class="btn-record idle" id="recordBtn">开始记录</button>
+    <div class="timer" id="timer">00:00</div>
+    <canvas id="wave" width="280" height="48" style="border-radius:6px;"></canvas>
+    <div class="status-line" id="status">准备好啦</div>
+    <div class="group-selector">
+      <span>声纹组</span>
+      <select id="groupSelect"></select>
+      <span style="margin-left:12px;">分段</span>
+      <select id="intervalSelect">
+        <option value="1">1 分钟</option>
+        <option value="3">3 分钟</option>
+        <option value="5" selected>5 分钟</option>
+        <option value="10">10 分钟</option>
+      </select>
+      <span style="margin-left:12px;">灵敏度</span>
+      <select id="thresholdSelect">
+        <option value="0.25">低</option>
+        <option value="0.35" selected>中</option>
+        <option value="0.5">高</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="transcript hidden" id="transcriptSection">
+    <div class="transcript-header">
+      <h2>💬 老婆说的话</h2>
+      <button id="copyBtn">📋 复制</button>
+    </div>
+    <div id="transcriptList"><div class="empty">按下按钮，老婆说的话会自动出现在这里</div></div>
+  </div>
+
+  <script src="/main.js"></script>
+</body>
+</html>

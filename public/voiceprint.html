@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>声纹库管理 — ListenToYourWife</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    body {
+      max-width: 860px;
+      margin: 24px auto;
+      padding: 0 16px 48px;
+    }
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    header a {
+      font-size: 14px;
+      color: inherit;
+      opacity: 0.7;
+    }
+    h1 { margin: 0; font-size: 22px; }
+    h2 { font-size: 17px; margin: 0 0 8px; }
+    .card {
+      border: 1px solid #8884;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    input, select, button {
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #9995;
+      font-size: 14px;
+    }
+    button {
+      cursor: pointer;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      font-weight: 500;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.danger { background: #dc2626; }
+    button.secondary { background: #6b7280; }
+    .row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .row > * { flex: 1; }
+    .row > button { flex: 0 0 auto; }
+    .hidden { display: none !important; }
+    .dim { opacity: 0.5; font-size: 13px; }
+    pre, .result-box {
+      background: #f5f5f51a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 20px;
+      margin-top: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .recorder-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .timer {
+      font-size: 28px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      min-width: 70px;
+    }
+    .recorder-area canvas {
+      border: 1px solid #8884;
+      border-radius: 8px;
+      width: 240px;
+      height: 48px;
+    }
+    .control-group {
+      display: flex;
+      gap: 8px;
+    }
+    .group-item, .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      margin-bottom: 4px;
+    }
+    .group-item:hover, .feature-item:hover { background: #8882; }
+    .group-item.selected, .feature-item.selected {
+      background: #2563eb22;
+      border-color: #2563eb;
+    }
+    .group-id, .feature-id {
+      font-weight: 600;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .group-name, .feature-info {
+      font-size: 13px;
+      opacity: 0.7;
+      flex: 1;
+    }
+    .search-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    .search-item .rank { font-weight: 600; min-width: 24px; }
+    .search-item .fid { font-family: monospace; min-width: 140px; }
+    .search-item .score { font-weight: 600; min-width: 50px; text-align: right; }
+    .score-bar-bg {
+      flex: 1;
+      height: 8px;
+      background: #8883;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .score-bar {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.5s;
+    }
+    .status-line {
+      font-size: 13px;
+      margin-top: 4px;
+      min-height: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🎙️ 声纹库管理</h1>
+    <a href="/">← 首页</a>
+  </header>
+
+  <!-- Section 1: Recording -->
+  <section class="card">
+    <h2>录制音频</h2>
+    <p class="dim">录制 3-5 秒清晰语音，用于注册或识别。建议在安静环境中录制。</p>
+    <div class="recorder-area">
+      <span class="timer" id="recordingTimer">00:00</span>
+      <canvas id="waveCanvas" width="240" height="48"></canvas>
+      <div class="control-group">
+        <button id="recordBtn">🔴 开始录制</button>
+        <button id="stopBtn" disabled>⏹ 停止</button>
+      </div>
+    </div>
+    <audio id="previewAudio" class="hidden" controls style="width:100%;margin-top:8px;"></audio>
+    <div class="status-line" id="convertStatus"></div>
+  </section>
+
+  <!-- Section 2: Group Management -->
+  <section class="card">
+    <h2>声纹组管理</h2>
+    <p class="dim">创建声纹组来组织不同说话人的声纹特征。例如为老婆创建一个专属组。</p>
+    <div class="row">
+      <input id="newGroupId" placeholder="组 ID (英文/数字/下划线)" />
+      <input id="newGroupName" placeholder="组名称 (如: 老婆的声纹)" />
+      <input id="newGroupInfo" placeholder="备注 (可选)" />
+    </div>
+    <div class="row">
+      <button id="createGroupBtn">创建声纹组</button>
+      <button id="deleteGroupBtn" class="danger">删除选中组</button>
+      <button id="refreshGroupsBtn" class="secondary">刷新列表</button>
+    </div>
+    <div id="groupList" style="margin-top:8px;"></div>
+    <pre id="groupResult"></pre>
+  </section>
+
+  <!-- Section 3: Feature Management -->
+  <section class="card">
+    <h2>声纹特征管理</h2>
+    <p class="dim">录制音频后，上传到选定的声纹组。建议同一说话人注册 2-3 个不同时段的特征以获得更好识别效果。</p>
+    <div class="row">
+      <select id="featureGroupSelect">
+        <option value="">-- 选择目标组 --</option>
+      </select>
+      <button id="uploadFeatureBtn">📤 上传当前录音</button>
+      <button id="deleteFeatureBtn" class="danger">删除选中特征</button>
+    </div>
+    <div id="featureList" style="margin-top:8px;"></div>
+    <pre id="featureResult"></pre>
+  </section>
+
+  <!-- Section 4: Recognition Test (1:N) -->
+  <section class="card">
+    <h2>识别测试 (1:N 检索)</h2>
+    <p class="dim">录制一段音频，在声纹组中搜索匹配的声纹特征来验证说话人身份。</p>
+    <div class="row">
+      <select id="searchGroupSelect">
+        <option value="">-- 选择搜索组 --</option>
+      </select>
+      <button id="searchBtn">🔍 开始检索</button>
+    </div>
+    <div id="searchResult" style="margin-top:8px;"></div>
+  </section>
+
+  <!-- Section 5: 1:1 Voiceprint Comparison -->
+  <section class="card">
+    <h2>声纹比对 (1:1)</h2>
+    <p class="dim">录制一段音频，与指定的声纹特征进行1:1比对，确认是否为同一说话人。</p>
+    <div class="row">
+      <select id="compareGroupSelect">
+        <option value="">-- 选择声纹组 --</option>
+      </select>
+    </div>
+    <div class="row" style="margin-top:4px;">
+      <select id="compareFeatureSelect">
+        <option value="">-- 先选组，再选特征 --</option>
+      </select>
+      <button id="compareBtn">🔬 开始比对</button>
+    </div>
+    <pre id="compareResult"></pre>
+  </section>
+
+  <!-- Section 6: Speech-to-Text -->
+  <section class="card">
+    <h2>语音转文字 (ASR)</h2>
+    <p class="dim">录制一段语音，将其转写成文字。支持普通话、广东话、英文混合自动识别。</p>
+    <div class="row">
+      <select id="asrAccent">
+        <option value="cn_cantonese">普通话＋广东话＋英文（自动识别）</option>
+        <option value="mandarin">仅普通话</option>
+        <option value="cantonese">仅广东话</option>
+      </select>
+      <button id="asrBtn">📝 转写当前录音</button>
+    </div>
+    <pre id="asrResult"></pre>
+  </section>
+
+  <script src="/voiceprint.js"></script>
+</body>
+</html>

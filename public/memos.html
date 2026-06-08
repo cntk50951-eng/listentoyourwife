@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>备忘录 — 听见老婆</title>
+  <style>
+    :root { color-scheme: light dark; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+    * { box-sizing: border-box; }
+    .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .app-header h1 { margin: 0; font-size: 20px; }
+    .app-header a { text-decoration: none; font-size: 15px; opacity: 0.6; color: inherit; }
+    .memo-card { border: 1px solid #8883; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+    .memo-source { font-size: 12px; opacity: 0.5; margin-bottom: 6px; }
+    .memo-body { font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+    .memo-time { font-size: 11px; opacity: 0.4; margin-top: 8px; }
+    .memo-actions { margin-top: 8px; }
+    .memo-actions button { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #dc2626; color: #fff; border: none; cursor: pointer; }
+    .empty { text-align: center; padding: 60px 16px; opacity: 0.35; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="app-header">
+    <h1>📝 备忘录</h1>
+    <a href="/">← 返回首页</a>
+  </div>
+  <div id="memoList"><div class="empty">还没有备忘录。在首页对老婆说的话使用 AI 分析后，点击「记入备忘录」即可。</div></div>
+  <script src="/memos.js"></script>
+</body>
+</html>
